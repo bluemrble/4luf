@@ -76,15 +76,54 @@ kecepatan = 80;kecepatan2=90;ftganti=0;fungsi=0;ftfungsi=0;fungsiAwal=0;fungsiti
   function anikal() {if (opsLcheck !== jumlahP) {setTimeout(otopsL,900);kalimat.style="opacity:1;transform:scale(1);";} else {setInterval(berjatuhan,600);kalimat.style="opacity:1;transform:scale(1.2);";}}
   
   const progressBar = document.getElementById('progress-bar');
-  var totalTime = 2700;
+  var totalTime = 6000; // durasi tiap teks (ms) sebelum lanjut otomatis — sebelumnya 2700, sekarang dibuat lebih lama. Ubah angka ini kalau mau lebih lama/cepat lagi.
   let currentTime = 0;
+
+  // ===== TAMBAHAN: FITUR PAUSE (tekan & tahan bubble teks untuk jeda, lepas untuk lanjut) =====
+  let progressInterval = null; // menyimpan id interval yang sedang jalan, supaya bisa benar-benar dihentikan/dilanjutkan
+  let isPaused = false;
+
+  function startProgressInterval(){
+    if(progressInterval){ clearInterval(progressInterval); }
+    progressInterval = setInterval(updateProgressBar, 100);
+  }
+
+  function pauseTimer(){
+    if(!isPaused && progressInterval){
+      isPaused = true;
+      clearInterval(progressInterval);
+      progressInterval = null;
+      bq.style.opacity = "0.85"; // sedikit efek visual biar kelihatan lagi dijeda
+    }
+  }
+
+  function resumeTimer(){
+    if(isPaused){
+      isPaused = false;
+      bq.style.opacity = "1";
+      startProgressInterval(); // lanjut dari currentTime terakhir, bukan diulang dari 0
+    }
+  }
+
+  bq.style.cursor = "pointer";
+  bq.style.userSelect = "none";
+  bq.style.webkitUserSelect = "none";
+  bq.addEventListener("mousedown", pauseTimer);
+  bq.addEventListener("mouseup", resumeTimer);
+  bq.addEventListener("mouseleave", resumeTimer);
+  bq.addEventListener("touchstart", function(e){ pauseTimer(); }, {passive:true});
+  bq.addEventListener("touchend", resumeTimer);
+  bq.addEventListener("touchcancel", resumeTimer);
+  // ===== AKHIR TAMBAHAN FITUR PAUSE =====
+
   function updateProgressBar() {
         currentTime += 100;
         const progress = ((totalTime - currentTime) / totalTime) * 100;
         progressBar.style.width = progress + '%';
 
         if (currentTime >= totalTime) {
-          clearInterval(setInterval(updateProgressBar, 100));
+          clearInterval(progressInterval);
+          progressInterval = null;
           setTimeout(myCheck,100);
           
         }
@@ -105,7 +144,7 @@ kecepatan = 80;kecepatan2=90;ftganti=0;fungsi=0;ftfungsi=0;fungsiAwal=0;fungsiti
   strings: [vketik1], startDelay: 80, speed: kecepatan, waitUntilVisible: true,
   afterComplete: function(){
     kalimat.innerHTML = vketik1;
-    if (opsLcheck !== jumlahP) {setInterval(updateProgressBar, 100);opsLclick=1;/*otopsL();*/} else {ftganti += 1;fthilang();setTimeout(ftmuncul, 300);setInterval(berjatuhan,200);}
+    if (opsLcheck !== jumlahP) {startProgressInterval();opsLclick=1;/*otopsL();*/} else {ftganti += 1;fthilang();setTimeout(ftmuncul, 300);setInterval(berjatuhan,200);}
   },}).go();
   }
   
@@ -127,7 +166,9 @@ kecepatan = 80;kecepatan2=90;ftganti=0;fungsi=0;ftfungsi=0;fungsiAwal=0;fungsiti
   if(opsLclick==1){
   if (opsLcheck !== jumlahP) {
     
+    var sedangNgetik = false;
     if(document.getElementById("kalimat" + opsLcheck + "ngetik")){
+        sedangNgetik = true;
         vketik1 = kalimatList[opsLcheck];
         prbhn();mulaiketik1();
     } else {
@@ -143,7 +184,10 @@ kecepatan = 80;kecepatan2=90;ftganti=0;fungsi=0;ftfungsi=0;fungsiAwal=0;fungsiti
     setTimeout(function(){
     	currentTime = 0;
         const progress = ((totalTime - currentTime) / totalTime) * 100;
-        progressBar.style.width = progress + '%';  
+        progressBar.style.width = progress + '%';
+        // Kalau teks berikutnya bukan yang diketik (sedangNgetik==false), timer bisa langsung jalan lagi di sini.
+        // Kalau sedang mengetik, timer baru mulai setelah proses ketik selesai (lihat mulaiketik1 -> startProgressInterval()).
+        if(!sedangNgetik){ startProgressInterval(); }
     }, 400);
     }
   } else {
